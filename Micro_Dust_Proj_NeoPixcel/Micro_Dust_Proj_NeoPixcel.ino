@@ -8,6 +8,10 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(64, PIN, NEO_GRB + NEO_KHZ800);
 
 #include <SoftwareSerial.h> // 0,1번핀 제외하고 Serial 통신을 하기 위해 선언
 
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 20, 2);
+
 // Serial 통신핀으로 D11번핀을 Rx로, D10번핀을 Tx로 선언
 SoftwareSerial mySerial(10, 9); // HC-06 TX=11번핀 , RX=10번핀 연결
 
@@ -17,6 +21,7 @@ void setup()
  mySerial.begin(9600); // 통신 속도 9600bps로 블루투스 시리얼 통신 시작
  pinMode(2,INPUT);
  pinMode(3, INPUT);
+ lcd.init();
 
   // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
   #if defined (__AVR_ATtiny85__)
@@ -24,7 +29,7 @@ void setup()
   #endif
   // End of trinket special code
 }
-
+int tmp_t = 0, tmp_h = 0;
 void loop()
 {
   String Week;
@@ -47,12 +52,24 @@ void loop()
       h = mySerial.readStringUntil('\n');
       t = mySerial.readStringUntil('\n');
       UV = mySerial.readStringUntil('\n');
-    
+      
+     if(tmp_h != count(t.toInt()) || tmp_h != count(h.toInt())) 
+     {
+      Serial.println(tmp_t);
+      Serial.println(tmp_h);
+      Serial.println(count(t.toInt()));
+      Serial.println(count(t.toInt()));
+      lcd.clear();
+      tmp_t = count(t.toInt());
+      tmp_h = count(h.toInt());
+     }
  }
   // Serial 핀에 입력이 들어오면, 바이트단위로 읽어서 블루투스로 출력
  if (Serial.available()){
    mySerial.write(Serial.read());
  }
+ 
+ 
  int a = digitalRead(2);
  int b = digitalRead(3);
  if(a == HIGH && b != HIGH)
@@ -81,12 +98,17 @@ void loop()
    else if(pmcf100.toInt() >=100 && pmcf100.toInt() <150) Bad();
    else if(pmcf100.toInt() >=150) Crazy();
 
-   
+
    Serial.println("Press");
   }
  }
+ lcd.setCursor(0,0);
+ lcd.print("Temp : " + t);
+ lcd.setCursor(0,1);
+ lcd.print("Humid : " + h);
+ delay(1000);
+ 
 }
-
 void Good()
  {
    strip.begin();
@@ -214,4 +236,16 @@ void Crazy()
    strip.show();
   delay(1000);
  strip.clear();
+}
+
+int count(int k)
+{
+  int c = 0;
+  while(1)
+  {
+    k = k/10;
+    if(k < 1) break;
+    c++;
+  }
+  return c;
 }
